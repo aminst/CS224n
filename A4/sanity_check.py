@@ -260,7 +260,7 @@ def main():
         hidden_size=HIDDEN_SIZE,
         dropout_rate=DROPOUT_RATE,
         vocab=vocab)
-
+    
     if args['1d']:
         question_1d_sanity_check(model, src_sents, tgt_sents, vocab)
     elif args['1e']:

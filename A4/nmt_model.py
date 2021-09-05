@@ -77,7 +77,7 @@ class NMT(nn.Module):
         ###     Dropout Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Dropout
         self.encoder = nn.LSTM(embed_size, hidden_size, bias=True, bidirectional=True)
-        self.decoer = nn.LSTMCell(embed_size+hidden_size, hidden_size, bias=True)
+        self.decoder = nn.LSTMCell(embed_size+hidden_size, hidden_size, bias=True)
         self.h_projection = nn.Linear(2*hidden_size, hidden_size, bias=False)
         self.c_projection = nn.Linear(2*hidden_size, hidden_size, bias=False)
         self.att_projection = nn.Linear(2*hidden_size, hidden_size, bias=False)
@@ -250,9 +250,13 @@ class NMT(nn.Module):
         ###     Tensor Stacking:
         ###         https://pytorch.org/docs/stable/torch.html#torch.stack
 
-
-
-
+        for Y_t in torch.split(self.model_embeddings.target(target_padded), 1):
+            Y_t = Y_t.squeeze(0)
+            Ybar_t = torch.cat((Y_t, o_prev), dim=1)
+            dec_state, o_t = self.step(Ybar_t, dec_state, enc_hiddens, self.att_projection(enc_hiddens), enc_masks)[0:2]
+            combined_outputs.append(o_t)
+            o_prev = o_t
+        combined_outputs = torch.stack(combined_outputs)
 
 
         ### END YOUR CODE
@@ -311,8 +315,8 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.unsqueeze
         ###     Tensor Squeeze:
         ###         https://pytorch.org/docs/stable/torch.html#torch.squeeze
-
-
+        dec_state = self.decoder(Ybar_t, dec_state)
+        e_t = torch.bmm(enc_hiddens_proj, dec_state[0].unsqueeze(2)).squeeze(2)
 
 
         ### END YOUR CODE
@@ -348,10 +352,9 @@ class NMT(nn.Module):
         ###         https://pytorch.org/docs/stable/torch.html#torch.cat
         ###     Tanh:
         ###         https://pytorch.org/docs/stable/torch.html#torch.tanh
-
-
-
-
+        a_t = torch.bmm(F.softmax(e_t, dim=1).unsqueeze(1), enc_hiddens).squeeze(1)
+        V_t = self.combined_output_projection(torch.cat((dec_state[0], a_t), dim=1))
+        O_t = self.dropout(torch.tanh(V_t))
 
         ### END YOUR CODE
 
