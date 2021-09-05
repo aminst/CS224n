@@ -1,5 +1,5 @@
 # Stanford CS224n assignments - Natural Language Processing with Deep Learning  
-My solutions for CS224n assignments.  __Work In Progress__  
+My solutions for CS224n assignments.
 
 
 ## References
